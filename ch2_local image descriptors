@@ -1,0 +1,39 @@
+#finding corresponding points and regions between images
+#1.harris corner detector
+from scipy.ndimage import filters
+def compute_harris_response(im,sigma=3):
+    imx=zeros(im.shape)
+    filters.gaussian_filter(im,(sigma,sigma),(0,1),imx)
+    imy=zeros(im.shape)
+    filters.gaussian_filter(im,(sigma,sigma),(1,0),imy)
+    #compute components of the harris matrix
+wxx=filters.gaussian_filter(imx*imx,sigma)
+wxy=filters.gaussian_filter(imx*imy,sigma)
+wyy=filters.gaussian_filter(imy*imy,sigma)
+#determinant and trace
+wdet=wxx*wyy-wxy**2
+wtr=wxx+wyy
+return wdet/wtr
+
+def get_descriptors(image,filtered_coords,wid=5):
+    desc=[]
+for coords in filtered_coords:
+    patch=image[coords[0]-wid:coords[0]]+wid+1,
+    coords[1]-wid:coords[1]+wid+1].flatten()
+desc.append(patch)
+return desc
+
+def match(desc1,desc2,threshold=0.5):
+    n=len(desc1[0])
+
+d=-ones((len(desc1),len(desc2)))
+for i in range (len(desc1)):
+    for j in range (len(desc2)):
+        d1=(desc1[i]-mean(desc1[i]))/std(desc1[i])
+        d2=(desc2[j]-mean(desc2[j]))/std(desc2[j])
+    ncc_value=sum(d1*d2)/(n-1)
+    if ncc_value>threshold:
+        d[i,j]=ncc_value
+ndx=argsort(-d)
+matchscores=ndx[:,0]
+return matchscores
